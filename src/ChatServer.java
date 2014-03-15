@@ -8,7 +8,15 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.concurrent.ConcurrentHashMap;
 
-
+/**
+ * 
+ * @author Garrett
+ * CSE 283 Project 3
+ * 
+ * The ChatServer is the server that holds all the data for the users of the system. It allows
+ * users to connect and download their fellow peers, thus allowing them to establish connections
+ * to each other. Doesn't have a condition to end its' running.
+ */
 public class ChatServer {
 
 	ServerSocket serverSocket = null;
@@ -123,6 +131,13 @@ public class ChatServer {
 }
 
 
+/**
+ * 
+ * @author Garrett
+ * 
+ * Class that runs on a separate thread from the user to handle individual requests from clients
+ * that are trying to connect to the server. Connections are NOT persistent.
+ */
 class ChatServerClientHandler extends Thread{
 	
 	ChatServer chatServer = null;
@@ -131,12 +146,20 @@ class ChatServerClientHandler extends Thread{
 	DataInputStream dis = null;
 	DataOutputStream dos = null;
 	
+	/**
+	 * Constructor that takes in the socket with the client, and the ChatServer.
+	 * @param s : Socket connection to the client
+	 * @param cs : ChatServer object the client wanted to connect to.
+	 */
 	ChatServerClientHandler(Socket s, ChatServer cs){
 		this.chatServer = cs;
 		this.client = s;
 
 	}
 	
+	/**
+	 * Loop that handles the clients request to the server
+	 */
 	@Override
 	public void run(){
 		createStreams();
@@ -144,6 +167,9 @@ class ChatServerClientHandler extends Thread{
 		closeConnection();
 	}
 	
+	/**
+	 * Create the streams (input/output) for inputting/outputting data to/from the client.
+	 */
 	private void createStreams(){
 		try {
 			dis = new DataInputStream(client.getInputStream());
@@ -160,6 +186,10 @@ class ChatServerClientHandler extends Thread{
 		}
 	}
 	
+	/**
+	 * Gets the command from the user.
+	 * @return : Integer representing what the user wants, the command.
+	 */
 	private int getCommand(){
 
 		int command = -1;
@@ -175,6 +205,10 @@ class ChatServerClientHandler extends Thread{
 		return command;
 	}
 	
+	/**
+	 * Method that processes the command from the user, and acts appropriately
+	 * @param command : The command to use (best used with getCommand())
+	 */
 	private void processCommand(int command){
 		
 		switch(command){
@@ -197,6 +231,9 @@ class ChatServerClientHandler extends Thread{
 		
 	}
 	
+	/**
+	 * Adds a user to the ChatServers' user list.
+	 */
 	private void addUser(){
 		
 		byte ip[] = new byte[4];
@@ -229,14 +266,23 @@ class ChatServerClientHandler extends Thread{
 		
 	}
 	
+	/**
+	 * Gets the users from the ChatServer and sends them to the client.
+	 */
 	private void getUsers(){
 		System.out.println("Users gotten");
 	}
 	
+	/**
+	 * Removes the user from the ChatServer list, granted that they are in the list.
+	 */
 	private void removeUser(){
 		System.out.println("User removed");
 	}
 	
+	/**
+	 * Closes the connection between the client and the server, and the input/output streams
+	 */
 	private void closeConnection(){
 		try {
 			dis.close();
