@@ -22,7 +22,7 @@ public class ChatServer {
 	ServerSocket serverSocket = null;
 	final static int PORT_NUMBER = 32500;
 	
-	private ConcurrentHashMap<String, InetSocketAddress> users = new ConcurrentHashMap<String, InetSocketAddress>();
+	ConcurrentHashMap<String, InetSocketAddress> users = new ConcurrentHashMap<String, InetSocketAddress>();
 
 	/**
 	 * The Constructor for the Chat server
@@ -67,6 +67,7 @@ public class ChatServer {
 	/**
 	 * Close the ServerSocket. This may not actually be used
 	 */
+	@SuppressWarnings("unused")
 	private void closeSocket(){
 		try {
 			serverSocket.close();
@@ -116,7 +117,10 @@ public class ChatServer {
 	 */
 	public synchronized void removeUser(InetSocketAddress ip, String username){
 		//By using ip as well, it adds security from someone from a different InetAddress from removing someones username.
-		users.remove(username, ip);
+		if(((InetSocketAddress)(users.get(username))).getAddress().equals(ip.getAddress())
+				&& ((InetSocketAddress)(users.get(username))).getPort() == ip.getPort()){
+			users.remove(username);
+		}
 	}
 	
 	/**
@@ -224,6 +228,10 @@ class ChatServerClientHandler extends Thread{
 			System.out.println("Client is trying to remove himself...");
 			removeUser();
 			break;
+		case 4:
+			System.out.println("Client is trying to connect to someone...");
+			connectUsers();
+			break;
 		default:
 			System.err.println("No Command for: " + command);
 			break;
@@ -270,14 +278,101 @@ class ChatServerClientHandler extends Thread{
 	 * Gets the users from the ChatServer and sends them to the client.
 	 */
 	private void getUsers(){
-		System.out.println("Users gotten");
+		
+		try{
+			//Tell user how large our list is!
+			dos.writeInt(chatServer.users.size());
+
+			//Write the usernames to the user
+			Object usernames[] = chatServer.users.keySet().toArray();
+			for(int i = 0; i < chatServer.users.size(); i++){
+				System.out.println(usernames[i].toString());
+				dos.writeUTF(usernames[i].toString());
+			}
+			
+			//Let the user know the list completed.
+			dos.writeInt(0);
+			
+		}catch(Exception ex){
+			System.err.println("Error sending the user list to a client!");
+			ex.printStackTrace();
+		}
+		
 	}
 	
 	/**
 	 * Removes the user from the ChatServer list, granted that they are in the list.
 	 */
 	private void removeUser(){
-		System.out.println("User removed");
+		System.out.println("Removing user...");
+		
+		try{
+			String username = dis.readUTF();
+			
+			byte ip[] = new byte[4];
+			dis.read(ip);
+			
+			int port = dis.readInt();
+			
+			chatServer.removeUser(new InetSocketAddress(InetAddress.getByAddress(ip), port), username);
+			
+			dos.writeBoolean(true);
+			
+		}catch(Exception ex){
+			System.err.println("Error removing the user");
+			ex.printStackTrace();
+			
+			try {
+				dos.writeBoolean(false);
+			} catch (IOException e) {
+				System.err.println("Error sending Response");
+				e.printStackTrace();
+			}
+			
+		}
+		
+	}
+	
+	/**
+	 * Connect a user to another by returning the ip and port of the user!
+	 */
+	private void connectUsers(){
+		
+		System.out.println("Connecting users...");
+		
+		//Determine which user they want, and return their data
+		try{
+			String username = dis.readUTF();
+			
+			//contains the user
+			if(chatServer.users.containsKey(username)){
+				
+				//Let client know to listen for more data
+				dos.writeBoolean(true);
+				
+				//Send important info back to user
+				byte ip[] = ((InetSocketAddress)chatServer.users.get(username)).getAddress().getAddress();
+				int port = ((InetSocketAddress)chatServer.users.get(username)).getPort();
+				
+				//Write the ip and port back to the client so they can connect!
+				dos.write(ip);
+				dos.writeInt(port);
+				
+			}
+			//Doesn't contain the user
+			else{ 
+				//Client knows no more data is comign
+				dos.writeBoolean(false);
+			}
+			
+			
+		}catch(Exception ex){
+			System.out.println("Error connecting users");
+			ex.printStackTrace();
+		}
+		
+		
+		
 	}
 	
 	/**
