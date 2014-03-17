@@ -92,8 +92,7 @@ public class ChatPeer implements ChatPeerInterfaceListener{
 	}
 	
 	/**
-	 * Loop that creates streams, will find an available port if the default
-	 * is not available
+	 * Loop that creates streams for input/output
 	 */
 	private void createStreams(){
 
@@ -133,6 +132,9 @@ public class ChatPeer implements ChatPeerInterfaceListener{
 		}
 	}
 	
+	/**
+	 * Close the streams that are consistently closed (NOT the server socket!)
+	 */
 	private void closeStreams(){
 		try{
 			server.close();
@@ -263,6 +265,15 @@ public class ChatPeer implements ChatPeerInterfaceListener{
 		}
 		
 		closeStreams();
+		
+		//Close the server socket
+		try{
+			serverSocket.close();
+			
+		}catch(Exception ex){
+			System.err.println("Error closing the server socket!");
+			ex.printStackTrace();
+		}
 		System.exit(0);
 	}
 
@@ -308,7 +319,7 @@ public class ChatPeer implements ChatPeerInterfaceListener{
 	}
 	
 	/**
-	 * @param args
+	 * Main Method to create an object
 	 */
 	public static void main(String[] args) {
 		new ChatPeer();
